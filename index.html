@@ -19,16 +19,25 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
 
     <style>
-        /* --- Styles Globaux et Variables --- */
+        /* --- NOUVEAU DESIGN SYSTEM --- */
         :root {
-            --primary-color: #0d1b2a;
-            --secondary-color: #1b263b;
-            --accent-color: #415a77;
-            --light-color: #e0e1dd;
-            --highlight-color: #ff6b6b;
-            --success-color: #52b788;
-            --font-family: 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+            --sidebar-bg: #111827;
+            --main-bg: #F9FAFB;
+            --card-bg: #FFFFFF;
+            --text-dark: #1F2937;
+            --text-light: #F9FAFB;
+            --text-muted: #6B7280;
+            --accent-color: #3B82F6;
+            --accent-hover: #2563EB;
+            --highlight-color: #EF4444;
+            --success-color: #10B981;
+            --border-color: #E5E7EB;
+            --font-family: 'Inter', 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+            --shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
         }
+
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
         * {
             margin: 0;
@@ -39,8 +48,8 @@
         html, body {
             height: 100%;
             font-family: var(--font-family);
-            background-color: var(--accent-color);
-            color: var(--light-color);
+            background-color: var(--main-bg);
+            color: var(--text-dark);
             overflow: hidden;
         }
 
@@ -51,9 +60,9 @@
         }
 
         .sidebar {
-            width: 220px;
-            background-color: var(--primary-color);
-            padding: 20px 0;
+            width: 240px;
+            background-color: var(--sidebar-bg);
+            padding: 24px 0;
             display: flex;
             flex-direction: column;
             transition: width 0.3s ease;
@@ -61,48 +70,55 @@
 
         .sidebar-header {
             text-align: center;
-            margin-bottom: 30px;
-            padding: 0 15px;
+            margin-bottom: 32px;
+            padding: 0 16px;
         }
 
         .sidebar-header h1 {
-            font-size: 1.5em;
-            font-weight: 600;
+            font-size: 1.75em;
+            font-weight: 700;
+            color: var(--text-light);
         }
         .sidebar-header h1 span {
-            font-weight: 300;
+            font-weight: 400;
+            opacity: 0.8;
         }
 
         .nav-menu {
             list-style: none;
             flex-grow: 1;
+            padding: 0 16px;
         }
 
         .nav-item a {
             display: flex;
             align-items: center;
-            padding: 15px 20px;
-            color: var(--light-color);
+            padding: 12px 16px;
+            margin-bottom: 8px;
+            color: #D1D5DB;
             text-decoration: none;
-            font-size: 1.1em;
-            transition: background-color 0.3s, color 0.3s;
-            border-left: 4px solid transparent;
+            font-size: 1em;
+            font-weight: 500;
+            border-radius: 6px;
+            transition: background-color 0.2s, color 0.2s;
         }
 
         .nav-item a:hover {
-            background-color: var(--accent-color);
+            background-color: #1F2937;
+            color: var(--text-light);
         }
 
         .nav-item a.active {
-            background-color: var(--secondary-color);
-            border-left-color: var(--highlight-color);
+            background-color: var(--accent-color);
+            color: var(--text-light);
             font-weight: 600;
         }
 
         .nav-item a i {
-            width: 30px;
+            width: 24px;
             text-align: center;
-            margin-right: 15px;
+            margin-right: 12px;
+            font-size: 1.1em;
         }
 
         .logout-btn {
@@ -110,21 +126,23 @@
             align-items: center;
             background: none;
             border: none;
-            color: var(--light-color);
-            padding: 15px 20px;
-            font-size: 1.1em;
+            color: #D1D5DB;
+            padding: 12px 32px;
+            font-size: 1em;
+            font-weight: 500;
             cursor: pointer;
             width: 100%;
             text-align: left;
+            margin-top: auto;
         }
         .logout-btn:hover {
-            background-color: var(--highlight-color);
+            color: var(--highlight-color);
         }
 
         .main-content {
             flex-grow: 1;
-            background-color: var(--secondary-color);
-            padding: 30px;
+            background-color: var(--main-bg);
+            padding: 40px;
             overflow-y: auto;
         }
 
@@ -138,46 +156,46 @@
         }
 
         @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
+            from { opacity: 0; transform: translateY(15px); }
             to { opacity: 1; transform: translateY(0); }
         }
 
         /* --- Éléments UI Communs --- */
         h2 {
-            font-size: 2em;
-            font-weight: 300;
-            margin-bottom: 25px;
-            border-bottom: 1px solid var(--accent-color);
-            padding-bottom: 10px;
+            font-size: 2.25em;
+            font-weight: 700;
+            margin-bottom: 32px;
         }
 
         .card {
-            background-color: var(--primary-color);
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
-            margin-bottom: 20px;
+            background-color: var(--card-bg);
+            padding: 24px;
+            border-radius: 12px;
+            box-shadow: var(--shadow);
+            margin-bottom: 24px;
+            border: 1px solid var(--border-color);
         }
 
         .grid-container {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 20px;
+            gap: 24px;
         }
 
         .kpi-card {
-            padding: 25px;
-            text-align: center;
+            padding: 24px;
+            text-align: left;
         }
         .kpi-card h3 {
-            font-size: 1.1em;
-            font-weight: 400;
-            color: var(--light-color);
-            margin-bottom: 10px;
+            font-size: 1em;
+            font-weight: 500;
+            color: var(--text-muted);
+            margin-bottom: 8px;
         }
         .kpi-card .value {
-            font-size: 2.2em;
+            font-size: 2.5em;
             font-weight: 700;
+            color: var(--text-dark);
         }
         .kpi-card .value.positive { color: var(--success-color); }
         .kpi-card .value.negative { color: var(--highlight-color); }
@@ -186,7 +204,7 @@
         .form-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 20px;
+            gap: 24px;
         }
 
         .form-group {
@@ -196,26 +214,29 @@
 
         .form-group label {
             margin-bottom: 8px;
-            font-weight: 600;
+            font-weight: 500;
+            color: #374151;
         }
 
         .form-group input, .form-group select {
             padding: 12px;
-            background-color: var(--secondary-color);
-            border: 1px solid var(--accent-color);
-            border-radius: 5px;
-            color: var(--light-color);
+            background-color: #F9FAFB;
+            border: 1px solid #D1D5DB;
+            border-radius: 6px;
+            color: var(--text-dark);
             font-size: 1em;
+            transition: border-color 0.2s, box-shadow 0.2s;
         }
 
         .form-group input:focus, .form-group select:focus {
             outline: none;
-            border-color: var(--highlight-color);
+            border-color: var(--accent-color);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3);
         }
 
         .form-group .readonly {
-            background-color: #2a364a;
-            font-style: italic;
+            background-color: #F3F4F6;
+            color: var(--text-muted);
         }
         
         .weight-group {
@@ -235,33 +256,34 @@
         }
 
         .form-actions {
-            margin-top: 20px;
+            margin-top: 32px;
             display: flex;
-            gap: 15px;
+            gap: 16px;
         }
 
         .btn {
-            padding: 12px 25px;
+            padding: 12px 24px;
             border: none;
-            border-radius: 5px;
+            border-radius: 6px;
             cursor: pointer;
             font-size: 1em;
             font-weight: 600;
-            transition: all 0.3s ease;
+            transition: all 0.2s ease;
         }
         .btn-primary {
-            background-color: var(--highlight-color);
+            background-color: var(--accent-color);
             color: white;
         }
         .btn-primary:hover {
-            background-color: #e63946;
+            background-color: var(--accent-hover);
         }
         .btn-secondary {
-            background-color: var(--accent-color);
-            color: var(--light-color);
+            background-color: var(--card-bg);
+            color: var(--text-dark);
+            border: 1px solid var(--border-color);
         }
         .btn-secondary:hover {
-            background-color: #5a7594;
+            background-color: #F3F4F6;
         }
         .btn i {
             margin-right: 8px;
@@ -274,35 +296,42 @@
         table {
             width: 100%;
             border-collapse: collapse;
-            margin-top: 20px;
+            margin-top: 24px;
+            font-size: 0.9em;
         }
         th, td {
-            padding: 15px;
+            padding: 16px;
             text-align: left;
-            border-bottom: 1px solid var(--accent-color);
+            border-bottom: 1px solid var(--border-color);
         }
         thead {
-            background-color: var(--primary-color);
+            background-color: #F9FAFB;
+        }
+        th {
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
         }
         tbody tr:hover {
-            background-color: #2a364a;
+            background-color: #F9FAFB;
         }
         .actions-cell button {
             background: none;
             border: none;
-            color: var(--light-color);
+            color: var(--text-muted);
             cursor: pointer;
-            font-size: 1.1em;
+            font-size: 1.2em;
             margin: 0 8px;
             transition: color 0.2s;
         }
-        .actions-cell .edit-btn:hover { color: #5c9ded; }
+        .actions-cell .edit-btn:hover { color: var(--accent-color); }
         .actions-cell .delete-btn:hover { color: var(--highlight-color); }
         
         .search-bar {
             width: 100%;
             max-width: 400px;
-            margin-bottom: 20px;
+            margin-bottom: 24px;
         }
 
         /* --- Overlay de Connexion & Modals --- */
@@ -312,43 +341,44 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background-color: rgba(0,0,0,0.8);
+            background-color: rgba(17, 24, 39, 0.8);
             display: flex;
             justify-content: center;
             align-items: center;
             z-index: 1000;
-            backdrop-filter: blur(5px);
+            backdrop-filter: blur(4px);
         }
 
         .login-box, .modal-box {
-            background-color: var(--secondary-color);
+            background-color: var(--card-bg);
             padding: 40px;
-            border-radius: 10px;
+            border-radius: 12px;
             text-align: center;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+            box-shadow: var(--shadow-lg);
             width: 90%;
             max-width: 400px;
         }
         .login-box h2, .modal-box h3 {
-            margin-bottom: 20px;
+            color: var(--text-dark);
+            margin-bottom: 16px;
         }
         .login-box p, .modal-box p {
-            margin-bottom: 25px;
-            color: #b0b3b8;
+            margin-bottom: 24px;
+            color: var(--text-muted);
         }
         .login-box input, .modal-box input {
             width: 100%;
             padding: 12px;
-            margin-bottom: 20px;
+            margin-bottom: 24px;
             text-align: center;
             font-size: 1.2em;
         }
         .error-message {
             color: var(--highlight-color);
-            margin-top: -10px;
-            margin-bottom: 15px;
+            margin-top: -16px;
+            margin-bottom: 16px;
             height: 20px;
-            font-weight: 600;
+            font-weight: 500;
         }
 
         /* --- Notification Toast --- */
@@ -356,11 +386,11 @@
             position: fixed;
             bottom: 20px;
             right: 20px;
-            background-color: var(--success-color);
+            background-color: var(--sidebar-bg);
             color: white;
-            padding: 15px 25px;
-            border-radius: 5px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            padding: 16px 24px;
+            border-radius: 8px;
+            box-shadow: var(--shadow-lg);
             z-index: 1001;
             opacity: 0;
             transform: translateY(20px);
@@ -370,9 +400,8 @@
             opacity: 1;
             transform: translateY(0);
         }
-        .toast.error {
-            background-color: var(--highlight-color);
-        }
+        .toast.success { background-color: var(--success-color); }
+        .toast.error { background-color: var(--highlight-color); }
 
         /* --- Responsive Design --- */
         @media (max-width: 768px) {
@@ -387,17 +416,17 @@
                 padding: 0;
             }
             .sidebar-header { display: none; }
-            .nav-menu { display: flex; flex-grow: 0; }
-            .nav-item a { padding: 15px; border-left: 0; border-bottom: 4px solid transparent; }
-            .nav-item a.active { border-bottom-color: var(--highlight-color); }
+            .nav-menu { display: flex; flex-grow: 0; padding: 0; }
+            .nav-item a { padding: 16px; margin: 0; border-radius: 0; border-bottom: 4px solid transparent; }
+            .nav-item a.active { border-bottom-color: var(--accent-color); background-color: transparent; }
             .nav-item a span { display: none; }
             .nav-item a i { margin-right: 0; font-size: 1.5em; }
-            .logout-btn { width: auto; padding: 15px; }
+            .logout-btn { width: auto; padding: 16px; }
             .logout-btn span { display: none; }
             .logout-btn i { margin-right: 0; font-size: 1.5em; }
 
             .main-content {
-                padding: 15px;
+                padding: 24px;
             }
             h2 { font-size: 1.8em; }
         }
@@ -405,25 +434,34 @@
         /* --- Styles spécifiques aux pages --- */
         #settings-page .info-grid {
             display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 15px;
-            font-size: 1.1em;
+            grid-template-columns: auto 1fr;
+            gap: 16px;
+            font-size: 1em;
         }
-        #settings-page .info-grid .label { font-weight: 600; color: #b0b3b8; }
-        #settings-page .info-grid .value { font-weight: 400; }
+        #settings-page .info-grid .label { font-weight: 500; color: var(--text-muted); }
+        #settings-page .info-grid .value { font-weight: 600; }
         #settings-page .danger-zone {
-            border: 2px solid var(--highlight-color);
-            margin-top: 30px;
-            padding: 20px;
+            border: 1px solid #FECACA;
+            background-color: #FEF2F2;
+            margin-top: 32px;
+            padding: 24px;
             border-radius: 8px;
         }
-        #settings-page .danger-zone h3 { color: var(--highlight-color); }
+        #settings-page .danger-zone h3 { color: #B91C1C; }
+        #settings-page .danger-zone p { color: #7F1D1D; }
+        #settings-page .danger-zone .btn-primary { 
+            background-color: var(--highlight-color);
+            color: white;
+        }
+        #settings-page .danger-zone .btn-primary:hover {
+            background-color: #B91C1C;
+        }
 
         .report-controls {
             display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-            margin-bottom: 20px;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 24px;
         }
     </style>
 </head>
@@ -492,11 +530,7 @@
                 <div class="grid-container" id="kpi-container">
                     <!-- KPIs chargés par JS -->
                 </div>
-                <div class="grid-container" style="grid-template-columns: 2fr 1fr; margin-top: 30px;">
-                    <div class="card">
-                        <h3>Évolution sur 30 jours (Marge)</h3>
-                        <canvas id="evolution-chart"></canvas>
-                    </div>
+                <div style="max-width: 800px; margin: 32px auto 0 auto;">
                     <div class="card">
                         <h3>Top 10 Pays</h3>
                         <canvas id="country-chart"></canvas>
@@ -581,7 +615,7 @@
                 <h2>Historique des Opérations</h2>
                 <div class="card">
                     <div class="form-group search-bar">
-                        <input type="text" id="history-search" placeholder="Rechercher...">
+                        <input type="text" id="history-search" placeholder="Rechercher par client, pays, bordereau...">
                     </div>
                     <div class="form-actions">
                          <button id="export-csv-history" class="btn btn-secondary"><i class="fas fa-file-csv"></i> Exporter CSV</button>
@@ -593,6 +627,7 @@
                                 <tr>
                                     <th>N° Ordre</th>
                                     <th>Date</th>
+                                    <th>Nature du Colis</th>
                                     <th>Client</th>
                                     <th>Pays</th>
                                     <th>Bordereau</th>
@@ -633,6 +668,7 @@
                                     <tr>
                                         <th>N° Ordre</th>
                                         <th>Date</th>
+                                        <th>Nature du Colis</th>
                                         <th>Client</th>
                                         <th>Pays</th>
                                         <th>Somme Payée</th>
@@ -709,7 +745,8 @@
         const COLORS = {
             highlight: computedStyles.getPropertyValue('--highlight-color').trim(),
             accent: computedStyles.getPropertyValue('--accent-color').trim(),
-            light: computedStyles.getPropertyValue('--light-color').trim()
+            text_muted: computedStyles.getPropertyValue('--text-muted').trim(),
+            text_dark: computedStyles.getPropertyValue('--text-dark').trim(),
         };
 
         // --- LISTE DES PAYS ---
@@ -843,17 +880,6 @@
         };
 
         // --- GESTION DES DONNÉES (FIRESTORE) ---
-        const incrementOrderId = async () => {
-            const counterRef = db.collection('metadata').doc('counter');
-            await db.runTransaction(async (transaction) => {
-                const doc = await transaction.get(counterRef);
-                const newValue = (doc.data()?.value || 0) + 1;
-                // CORRECTION: Utiliser .set() au lieu de .update() pour créer le document s'il n'existe pas.
-                transaction.set(counterRef, { value: newValue });
-                currentOrderId = newValue;
-            });
-        };
-        
         const resetCounter = async () => {
             await db.collection('metadata').doc('counter').set({ value: 1 });
             currentOrderId = 1;
@@ -919,7 +945,6 @@
             const id = document.getElementById('operation-id').value;
             
             const operationData = {
-                orderId: parseInt(document.getElementById('numero-ordre').value, 10),
                 date: document.getElementById('date-operation').value,
                 nature: document.getElementById('nature-colis').value,
                 client: document.getElementById('client-name').value,
@@ -933,15 +958,31 @@
             };
 
             try {
-                if (id) { // Mode édition
+                if (id) { 
                     await db.collection('operations').doc(id).update(operationData);
-                } else { // Mode ajout
-                    await db.collection('operations').add(operationData);
-                    await incrementOrderId();
+                    showToast('Opération mise à jour avec succès !', 'success');
+
+                } else { 
+                    const counterRef = db.collection('metadata').doc('counter');
+                    const newOpRef = db.collection('operations').doc();
+
+                    await db.runTransaction(async (transaction) => {
+                        const counterDoc = await transaction.get(counterRef);
+                        const newOrderId = counterDoc.exists ? counterDoc.data().value : 1;
+                        
+                        operationData.orderId = newOrderId;
+                        
+                        transaction.set(newOpRef, operationData);
+                        
+                        const nextOrderId = newOrderId + 1;
+                        transaction.set(counterRef, { value: nextOrderId });
+                    });
+                    showToast('Opération ajoutée avec succès !', 'success');
                 }
-                showToast(`Opération ${id ? 'mise à jour' : 'ajoutée'} avec succès !`);
+                
                 resetOperationForm();
                 switchPage('history');
+
             } catch (error) {
                 console.error("Erreur d'écriture dans Firestore:", error);
                 showToast("Erreur lors de la sauvegarde.", "error");
@@ -998,7 +1039,7 @@
             );
 
             if (filteredOps.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;">Aucune opération trouvée.</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;">Aucune opération trouvée.</td></tr>';
                 return;
             }
 
@@ -1009,6 +1050,7 @@
                     <tr>
                         <td>${op.orderId}</td>
                         <td>${op.date}</td>
+                        <td>${op.nature}</td>
                         <td>${op.client}</td>
                         <td>${op.pays}</td>
                         <td>${op.bordereau}</td>
@@ -1045,52 +1087,7 @@
                 <div class="card kpi-card"><h3>Reste Total</h3><div class="value ${totalRestes >= 0 ? 'positive' : 'negative'}">${formatCurrency(totalRestes)}</div></div>
             `;
             
-            renderEvolutionChart();
             renderCountryChart();
-        };
-        
-        const renderEvolutionChart = () => {
-            const ctx = document.getElementById('evolution-chart').getContext('2d');
-            if (charts.evolution) charts.evolution.destroy();
-
-            const labels = [];
-            const data = [];
-            const today = new Date();
-            
-            for (let i = 29; i >= 0; i--) {
-                const date = new Date(today);
-                date.setDate(today.getDate() - i);
-                const dateString = new Intl.DateTimeFormat('fr-CA', { timeZone: TIMEZONE }).format(date);
-                labels.push(date.toLocaleDateString('fr-FR', {day: '2-digit', month: '2-digit'}));
-                
-                const dayOps = operations.filter(op => op.date === dateString);
-                const dayMarge = dayOps.reduce((sum, op) => sum + (op.somme - op.dhl - op.depenses), 0);
-                data.push(dayMarge);
-            }
-
-            charts.evolution = new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        label: 'Marge Quotidienne (FCFA)',
-                        data: data,
-                        borderColor: COLORS.highlight,
-                        backgroundColor: 'rgba(255, 107, 107, 0.2)',
-                        fill: true,
-                        tension: 0.4
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    scales: {
-                        y: { ticks: { color: COLORS.light } },
-                        x: { ticks: { color: COLORS.light } }
-                    },
-                    plugins: { legend: { labels: { color: COLORS.light } } }
-                }
-            });
         };
         
         const renderCountryChart = () => {
@@ -1116,9 +1113,10 @@
                     datasets: [{
                         label: 'Nombre de colis',
                         data: data,
-                        backgroundColor: 'rgba(65, 90, 119, 0.8)',
+                        backgroundColor: 'rgba(59, 130, 246, 0.8)',
                         borderColor: COLORS.accent,
-                        borderWidth: 1
+                        borderWidth: 1,
+                        borderRadius: 4
                     }]
                 },
                 options: {
@@ -1126,8 +1124,8 @@
                     responsive: true,
                     maintainAspectRatio: false,
                     scales: {
-                        y: { ticks: { color: COLORS.light } },
-                        x: { ticks: { color: COLORS.light } }
+                        y: { ticks: { color: COLORS.text_muted } },
+                        x: { ticks: { color: COLORS.text_muted } }
                     },
                     plugins: { legend: { display: false } }
                 }
@@ -1175,7 +1173,7 @@
             const tbody = document.getElementById('report-table').querySelector('tbody');
             tbody.innerHTML = '';
             if (data.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;">Aucune donnée pour cette période.</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;">Aucune donnée pour cette période.</td></tr>';
                 return;
             }
             data.forEach(op => {
@@ -1185,6 +1183,7 @@
                     <tr>
                         <td>${op.orderId}</td>
                         <td>${op.date}</td>
+                        <td>${op.nature}</td>
                         <td>${op.client}</td>
                         <td>${op.pays}</td>
                         <td>${formatCurrency(op.somme)}</td>
@@ -1200,7 +1199,7 @@
 
         // --- FONCTIONS D'EXPORT ---
         const exportToCSV = (data, filename) => {
-            const headers = ["N° Ordre", "Date", "Nature Colis", "Client", "Pays", "Bordereau", "Poids", "Unité Poids", "Somme Payée", "Montant DHL", "Dépenses", "Marge", "Reste"];
+            const headers = ["N° Ordre", "Date", "Nature du Colis", "Client", "Pays", "Bordereau", "Poids", "Unité Poids", "Somme Payée", "Montant DHL", "Dépenses", "Marge", "Reste"];
             const rows = data.map(op => {
                 const marge = op.somme - op.dhl - op.depenses;
                 const reste = marge - op.depenses;
@@ -1221,7 +1220,7 @@
                 const marge = op.somme - op.dhl - op.depenses;
                 const reste = marge - op.depenses;
                 return {
-                    "N° Ordre": op.orderId, "Date": op.date, "Nature Colis": op.nature, "Client": op.client, "Pays": op.pays, "Bordereau": op.bordereau,
+                    "N° Ordre": op.orderId, "Date": op.date, "Nature du Colis": op.nature, "Client": op.client, "Pays": op.pays, "Bordereau": op.bordereau,
                     "Poids": op.poids, "Unité Poids": op.poidsUnite, "Somme Payée": op.somme, "Montant DHL": op.dhl, "Dépenses": op.depenses, "Marge": marge, "Reste": reste
                 };
             });

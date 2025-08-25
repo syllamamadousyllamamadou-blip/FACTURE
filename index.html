@@ -13,6 +13,11 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
 
+    <!-- Scripts Firebase SDK v8 (plus stable pour ce cas d'usage) -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+
     <style>
         /* --- Styles Globaux et Variables --- */
         :root {
@@ -667,16 +672,38 @@
 
     <script>
     document.addEventListener('DOMContentLoaded', () => {
+        // --- CONFIGURATION FIREBASE ---
+        const firebaseConfig = {
+            apiKey: "AIzaSyDaA4mDlNlsX61a8R5HVmgUMStXmproBwM",
+            authDomain: "comptamc-97df1.firebaseapp.com",
+            projectId: "comptamc-97df1",
+            storageBucket: "comptamc-97df1.appspot.com",
+            messagingSenderId: "632347607703",
+            appId: "1:632347607703:web:d1a72b8d7324dafc6a5fd2"
+        };
+
+        // --- INITIALISATION DE FIREBASE (style v8) ---
+        let db, auth;
+        try {
+            firebase.initializeApp(firebaseConfig);
+            db = firebase.firestore();
+            auth = firebase.auth();
+        } catch (e) {
+            console.error("Erreur critique d'initialisation de Firebase:", e);
+            document.body.innerHTML = "<h1>Erreur critique: Impossible d'initialiser Firebase. Vérifiez la configuration.</h1>";
+            return;
+        }
+
         // --- CONSTANTES ET VARIABLES GLOBALES ---
         const APP_SECRET_CODE = '5008';
-        const DB_OPERATIONS_KEY = 'moncolis_operations';
-        const DB_COUNTER_KEY = 'moncolis_counter';
         const SESSION_KEY = 'moncolis_session_active';
         const TIMEZONE = 'Africa/Abidjan';
 
         let operations = [];
+        let currentOrderId = 1;
         let charts = {};
-        
+        let unsubscribeOperations; // Pour se désabonner du listener Firestore
+
         // --- RÉCUPÉRATION DES COULEURS CSS POUR JS ---
         const computedStyles = getComputedStyle(document.documentElement);
         const COLORS = {
@@ -752,30 +779,33 @@
             if (sessionStorage.getItem(SESSION_KEY) === 'true') {
                 loginOverlay.style.display = 'none';
                 appContainer.style.visibility = 'visible';
-                try {
-                    initializeApp();
-                } catch (error) {
-                    console.error("Erreur lors de l'initialisation de l'application:", error);
-                    document.body.innerHTML = `<div style="color: white; text-align: center; padding: 50px;"><h1>Une erreur critique est survenue.</h1><p>Veuillez rafraîchir la page ou contacter le support. Détails: ${error.message}</p></div>`;
-                }
+                initializeApp();
             } else {
                 loginOverlay.style.display = 'flex';
                 appContainer.style.visibility = 'hidden';
             }
         };
 
-        const handleLogin = () => {
+        const handleLogin = async () => {
             if (loginCodeInput.value === APP_SECRET_CODE) {
-                sessionStorage.setItem(SESSION_KEY, 'true');
-                checkSession();
+                try {
+                    await auth.signInAnonymously();
+                    sessionStorage.setItem(SESSION_KEY, 'true');
+                    checkSession();
+                } catch (error) {
+                    console.error("Erreur d'authentification Firebase DÉTAILLÉE:", error.code, error.message);
+                    loginError.textContent = `Erreur: ${error.code || error.message}. Vérifiez la config Firebase.`;
+                }
             } else {
                 loginError.textContent = 'Code incorrect.';
                 loginCodeInput.value = '';
             }
         };
 
-        const handleLogout = () => {
+        const handleLogout = async () => {
+            await auth.signOut();
             sessionStorage.removeItem(SESSION_KEY);
+            if(unsubscribeOperations) unsubscribeOperations();
             checkSession();
         };
 
@@ -812,35 +842,30 @@
             });
         };
 
-        // --- GESTION DES DONNÉES (localStorage) ---
-        const loadOperations = () => {
-            try {
-                const data = localStorage.getItem(DB_OPERATIONS_KEY);
-                operations = data ? JSON.parse(data) : [];
-            } catch (error) {
-                console.error("Erreur de lecture des opérations depuis localStorage:", error);
-                operations = [];
-                showToast("Les données locales sont corrompues. Une réinitialisation a été effectuée.", "error");
-                localStorage.removeItem(DB_OPERATIONS_KEY);
+        // --- GESTION DES DONNÉES (FIRESTORE) ---
+        const getNextOrderId = async () => {
+            const counterRef = db.collection('metadata').doc('counter');
+            const doc = await counterRef.get();
+            if (!doc.exists) {
+                await counterRef.set({ value: 1 });
+                return 1;
             }
+            return doc.data().value;
         };
 
-        const saveOperations = () => {
-            localStorage.setItem(DB_OPERATIONS_KEY, JSON.stringify(operations));
-        };
-
-        const getNextOrderId = () => {
-            const counter = localStorage.getItem(DB_COUNTER_KEY);
-            return counter ? parseInt(counter, 10) : 1;
-        };
-
-        const incrementOrderId = () => {
-            let nextId = getNextOrderId();
-            localStorage.setItem(DB_COUNTER_KEY, ++nextId);
+        const incrementOrderId = async () => {
+            const counterRef = db.collection('metadata').doc('counter');
+            await db.runTransaction(async (transaction) => {
+                const doc = await transaction.get(counterRef);
+                const newValue = (doc.data()?.value || 0) + 1;
+                transaction.update(counterRef, { value: newValue });
+                currentOrderId = newValue;
+            });
         };
         
-        const resetCounter = () => {
-            localStorage.setItem(DB_COUNTER_KEY, 1);
+        const resetCounter = async () => {
+            await db.collection('metadata').doc('counter').set({ value: 1 });
+            currentOrderId = 1;
         };
 
         // --- GESTION DE L'INTERFACE (UI) ---
@@ -852,11 +877,14 @@
             document.querySelector(`a[data-page="${pageId}"]`).classList.add('active');
             
             // Rafraîchir les données de la page active
-            switch(pageId) {
-                case 'dashboard': updateDashboard(); break;
-                case 'history': renderHistoryTable(); break;
-                case 'reports': generateReport(); break;
-                case 'add-operation': resetOperationForm(); break;
+            const currentPage = document.querySelector('.page.active').id.replace('-page', '');
+            if (currentPage === pageId) {
+                switch(pageId) {
+                    case 'dashboard': updateDashboard(); break;
+                    case 'history': renderHistoryTable(); break;
+                    case 'reports': generateReport(); break;
+                    case 'add-operation': resetOperationForm(); break;
+                }
             }
         };
 
@@ -887,7 +915,7 @@
         const resetOperationForm = () => {
             operationForm.reset();
             document.getElementById('operation-id').value = '';
-            document.getElementById('numero-ordre').value = getNextOrderId();
+            document.getElementById('numero-ordre').value = currentOrderId;
             document.getElementById('date-operation').value = getCurrentDate();
             formTitle.textContent = "Ajouter une Opération";
             formSubmitBtn.innerHTML = '<i class="fas fa-save"></i> Enregistrer';
@@ -895,12 +923,11 @@
             calculateFormValues();
         };
 
-        const handleFormSubmit = (e) => {
+        const handleFormSubmit = async (e) => {
             e.preventDefault();
             const id = document.getElementById('operation-id').value;
             
             const operationData = {
-                id: id || Date.now().toString(),
                 orderId: parseInt(document.getElementById('numero-ordre').value, 10),
                 date: document.getElementById('date-operation').value,
                 nature: document.getElementById('nature-colis').value,
@@ -914,20 +941,20 @@
                 depenses: parseFloat(document.getElementById('depenses').value),
             };
 
-            if (id) { // Mode édition
-                const index = operations.findIndex(op => op.id === id);
-                if (index !== -1) {
-                    operations[index] = { ...operations[index], ...operationData };
+            try {
+                if (id) { // Mode édition
+                    await db.collection('operations').doc(id).update(operationData);
+                } else { // Mode ajout
+                    await db.collection('operations').add(operationData);
+                    await incrementOrderId();
                 }
-            } else { // Mode ajout
-                operations.push(operationData);
-                incrementOrderId();
+                showToast(`Opération ${id ? 'mise à jour' : 'ajoutée'} avec succès !`);
+                resetOperationForm();
+                switchPage('history');
+            } catch (error) {
+                console.error("Erreur d'écriture dans Firestore:", error);
+                showToast("Erreur lors de la sauvegarde.", "error");
             }
-
-            saveOperations();
-            showToast(`Opération ${id ? 'mise à jour' : 'ajoutée'} avec succès !`);
-            resetOperationForm();
-            switchPage('history');
         };
         
         const editOperation = (id) => {
@@ -959,10 +986,13 @@
         const deleteOperation = async (id) => {
             const confirmed = await requestSecurityCode('Supprimer l\'Opération', 'Cette action est irréversible. Veuillez confirmer votre code.');
             if (confirmed) {
-                operations = operations.filter(op => op.id !== id);
-                saveOperations();
-                renderHistoryTable();
-                showToast("Opération supprimée.", "error");
+                try {
+                    await db.collection('operations').doc(id).delete();
+                    showToast("Opération supprimée.", "error");
+                } catch (error) {
+                    console.error("Erreur de suppression dans Firestore:", error);
+                    showToast("Erreur lors de la suppression.", "error");
+                }
             }
         };
 
@@ -974,7 +1004,7 @@
                 Object.values(op).some(val => 
                     String(val).toLowerCase().includes(filter.toLowerCase())
                 )
-            ).sort((a, b) => b.orderId - a.orderId);
+            );
 
             if (filteredOps.length === 0) {
                 tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;">Aucune opération trouvée.</td></tr>';
@@ -1241,64 +1271,92 @@
                     exportToJSON(yearOps, `sauvegarde_moncolis_${currentYear}`);
                 }
                 
-                // Réinitialisation
-                operations = [];
-                saveOperations();
-                resetCounter();
+                // Batch delete from Firestore
+                const batch = db.batch();
+                yearOps.forEach(op => {
+                    const docRef = db.collection('operations').doc(op.id);
+                    batch.delete(docRef);
+                });
+                await batch.commit();
+                
+                await resetCounter();
                 
                 showToast('Sauvegarde effectuée et application réinitialisée !');
-                setTimeout(() => location.reload(), 1500);
             }
         };
 
         // --- INITIALISATION DE L'APPLICATION ---
         const initializeApp = () => {
-            loadOperations();
             populateCountryDropdown();
+            
+            // Écouteur en temps réel pour les opérations
+            unsubscribeOperations = db.collection('operations').orderBy('orderId', 'desc').onSnapshot(snapshot => {
+                operations = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                
+                // Mettre à jour l'UI en fonction de la page active
+                const currentPage = document.querySelector('.page.active').id.replace('-page', '');
+                switch(currentPage) {
+                    case 'dashboard': updateDashboard(); break;
+                    case 'history': renderHistoryTable(); break;
+                    case 'reports': generateReport(); break;
+                }
+            }, error => {
+                console.error("Erreur d'écoute Firestore:", error);
+                showToast("Erreur de connexion à la base de données.", "error");
+            });
+
+            // Écouteur pour le compteur
+            db.collection('metadata').doc('counter').onSnapshot(doc => {
+                currentOrderId = doc.exists ? doc.data().value : 1;
+                if (document.querySelector('.page.active').id === 'add-operation-page') {
+                    document.getElementById('numero-ordre').value = currentOrderId;
+                }
+            });
+
             switchPage('dashboard');
 
-            // --- ÉCOUTEURS D'ÉVÉNEMENTS ---
-            navLinks.forEach(link => {
-                link.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    switchPage(e.currentTarget.dataset.page);
+            // --- ÉCOUTEURS D'ÉVÉNEMENTS (définis une seule fois) ---
+            if (!window.eventListenersInitialized) {
+                navLinks.forEach(link => {
+                    link.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        switchPage(e.currentTarget.dataset.page);
+                    });
                 });
-            });
 
-            logoutButton.addEventListener('click', handleLogout);
-            
-            // Formulaire
-            ['somme-payee', 'montant-dhl', 'depenses'].forEach(id => {
-                document.getElementById(id).addEventListener('input', calculateFormValues);
-            });
-            operationForm.addEventListener('submit', handleFormSubmit);
-            formCancelBtn.addEventListener('click', resetOperationForm);
-            
-            // Historique
-            document.getElementById('history-search').addEventListener('input', (e) => renderHistoryTable(e.target.value));
-            document.getElementById('history-table').addEventListener('click', (e) => {
-                const target = e.target.closest('button');
-                if (!target) return;
+                logoutButton.addEventListener('click', handleLogout);
                 
-                const id = target.dataset.id;
-                if (target.classList.contains('edit-btn')) editOperation(id);
-                if (target.classList.contains('delete-btn')) deleteOperation(id);
-            });
-            
-            document.getElementById('export-csv-history').addEventListener('click', () => exportToCSV(operations, 'historique_complet_moncolis'));
-            document.getElementById('export-excel-history').addEventListener('click', () => exportToExcel(operations, 'historique_complet_moncolis'));
+                ['somme-payee', 'montant-dhl', 'depenses'].forEach(id => {
+                    document.getElementById(id).addEventListener('input', calculateFormValues);
+                });
+                operationForm.addEventListener('submit', handleFormSubmit);
+                formCancelBtn.addEventListener('click', resetOperationForm);
+                
+                document.getElementById('history-search').addEventListener('input', (e) => renderHistoryTable(e.target.value));
+                document.getElementById('history-table').addEventListener('click', (e) => {
+                    const target = e.target.closest('button');
+                    if (!target) return;
+                    
+                    const id = target.dataset.id;
+                    if (target.classList.contains('edit-btn')) editOperation(id);
+                    if (target.classList.contains('delete-btn')) deleteOperation(id);
+                });
+                
+                document.getElementById('export-csv-history').addEventListener('click', () => exportToCSV(operations, 'historique_complet_moncolis'));
+                document.getElementById('export-excel-history').addEventListener('click', () => exportToExcel(operations, 'historique_complet_moncolis'));
 
-            // Rapports
-            document.getElementById('report-period').addEventListener('change', generateReport);
-            document.getElementById('export-pdf-report').addEventListener('click', () => exportToPDF('report-content', 'rapport_moncolis'));
-            document.getElementById('export-excel-report').addEventListener('click', () => {
-                const table = document.getElementById('report-table');
-                const wb = XLSX.utils.table_to_book(table, {sheet: "Rapport"});
-                XLSX.writeFile(wb, "rapport_moncolis.xlsx");
-            });
+                document.getElementById('report-period').addEventListener('change', generateReport);
+                document.getElementById('export-pdf-report').addEventListener('click', () => exportToPDF('report-content', 'rapport_moncolis'));
+                document.getElementById('export-excel-report').addEventListener('click', () => {
+                    const table = document.getElementById('report-table');
+                    const wb = XLSX.utils.table_to_book(table, {sheet: "Rapport"});
+                    XLSX.writeFile(wb, "rapport_moncolis.xlsx");
+                });
 
-            // Paramètres
-            document.getElementById('annual-backup-btn').addEventListener('click', handleAnnualBackup);
+                document.getElementById('annual-backup-btn').addEventListener('click', handleAnnualBackup);
+                
+                window.eventListenersInitialized = true;
+            }
         };
 
         // Démarrage

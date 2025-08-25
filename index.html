@@ -843,22 +843,13 @@
         };
 
         // --- GESTION DES DONNÉES (FIRESTORE) ---
-        const getNextOrderId = async () => {
-            const counterRef = db.collection('metadata').doc('counter');
-            const doc = await counterRef.get();
-            if (!doc.exists) {
-                await counterRef.set({ value: 1 });
-                return 1;
-            }
-            return doc.data().value;
-        };
-
         const incrementOrderId = async () => {
             const counterRef = db.collection('metadata').doc('counter');
             await db.runTransaction(async (transaction) => {
                 const doc = await transaction.get(counterRef);
                 const newValue = (doc.data()?.value || 0) + 1;
-                transaction.update(counterRef, { value: newValue });
+                // CORRECTION: Utiliser .set() au lieu de .update() pour créer le document s'il n'existe pas.
+                transaction.set(counterRef, { value: newValue });
                 currentOrderId = newValue;
             });
         };

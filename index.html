@@ -347,6 +347,7 @@
             align-items: center;
             z-index: 1000;
             backdrop-filter: blur(4px);
+            transition: opacity 0.3s ease;
         }
 
         .login-box, .modal-box {
@@ -530,12 +531,6 @@
                 <div class="grid-container" id="kpi-container">
                     <!-- KPIs chargés par JS -->
                 </div>
-                <div style="max-width: 800px; margin: 32px auto 0 auto;">
-                    <div class="card">
-                        <h3>Top 10 Pays</h3>
-                        <canvas id="country-chart"></canvas>
-                    </div>
-                </div>
             </section>
 
             <!-- Page Ajouter/Modifier une opération -->
@@ -560,6 +555,14 @@
                             <div class="form-group">
                                 <label for="client-name">Nom et Prénom Client</label>
                                 <input type="text" id="client-name" required>
+                            </div>
+                             <div class="form-group">
+                                <label for="numero-expediteur">Numéro Expéditeur</label>
+                                <input type="text" id="numero-expediteur" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="numero-destinataire">Numéro Destinataire</label>
+                                <input type="text" id="numero-destinataire" required>
                             </div>
                             <div class="form-group">
                                 <label for="pays">Pays</label>
@@ -629,11 +632,12 @@
                                     <th>Date</th>
                                     <th>Nature du Colis</th>
                                     <th>Client</th>
+                                    <th>N° Expéd.</th>
+                                    <th>N° Dest.</th>
                                     <th>Pays</th>
                                     <th>Bordereau</th>
                                     <th>Somme Payée</th>
                                     <th>Marge</th>
-                                    <th>Reste</th>
                                     <th>Actions</th>
                                 </tr>
                             </thead>
@@ -670,10 +674,10 @@
                                         <th>Date</th>
                                         <th>Nature du Colis</th>
                                         <th>Client</th>
+                                        <th>N° Expéd.</th>
+                                        <th>N° Dest.</th>
                                         <th>Pays</th>
                                         <th>Somme Payée</th>
-                                        <th>Montant DHL</th>
-                                        <th>Dépenses</th>
                                         <th>Marge</th>
                                         <th>Reste</th>
                                     </tr>
@@ -942,12 +946,16 @@
 
         const handleFormSubmit = async (e) => {
             e.preventDefault();
+            if (!auth.currentUser) { showToast("Vous n'êtes pas connecté.", "error"); return; }
+            
             const id = document.getElementById('operation-id').value;
             
             const operationData = {
                 date: document.getElementById('date-operation').value,
                 nature: document.getElementById('nature-colis').value,
                 client: document.getElementById('client-name').value,
+                numeroExpediteur: document.getElementById('numero-expediteur').value,
+                numeroDestinataire: document.getElementById('numero-destinataire').value,
                 pays: document.getElementById('pays').value,
                 bordereau: document.getElementById('bordereau').value,
                 poids: parseFloat(document.getElementById('poids').value),
@@ -1000,6 +1008,8 @@
             document.getElementById('date-operation').value = op.date;
             document.getElementById('nature-colis').value = op.nature;
             document.getElementById('client-name').value = op.client;
+            document.getElementById('numero-expediteur').value = op.numeroExpediteur;
+            document.getElementById('numero-destinataire').value = op.numeroDestinataire;
             document.getElementById('pays').value = op.pays;
             document.getElementById('bordereau').value = op.bordereau;
             document.getElementById('poids').value = op.poids;
@@ -1016,6 +1026,7 @@
         };
         
         const deleteOperation = async (id) => {
+            if (!auth.currentUser) { showToast("Vous n'êtes pas connecté.", "error"); return; }
             const confirmed = await requestSecurityCode('Supprimer l\'Opération', 'Cette action est irréversible. Veuillez confirmer votre code.');
             if (confirmed) {
                 try {
@@ -1039,24 +1050,24 @@
             );
 
             if (filteredOps.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;">Aucune opération trouvée.</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="11" style="text-align:center;">Aucune opération trouvée.</td></tr>';
                 return;
             }
 
             filteredOps.forEach(op => {
                 const marge = op.somme - op.dhl - op.depenses;
-                const reste = marge - op.depenses;
                 const row = `
                     <tr>
                         <td>${op.orderId}</td>
                         <td>${op.date}</td>
                         <td>${op.nature}</td>
                         <td>${op.client}</td>
+                        <td>${op.numeroExpediteur || '-'}</td>
+                        <td>${op.numeroDestinataire || '-'}</td>
                         <td>${op.pays}</td>
                         <td>${op.bordereau}</td>
                         <td>${formatCurrency(op.somme)}</td>
                         <td>${formatCurrency(marge)}</td>
-                        <td>${formatCurrency(reste)}</td>
                         <td class="actions-cell">
                             <button class="edit-btn" data-id="${op.id}"><i class="fas fa-edit"></i></button>
                             <button class="delete-btn" data-id="${op.id}"><i class="fas fa-trash"></i></button>
@@ -1086,52 +1097,8 @@
                 <div class="card kpi-card"><h3>Marges Totales</h3><div class="value ${totalMarges >= 0 ? 'positive' : 'negative'}">${formatCurrency(totalMarges)}</div></div>
                 <div class="card kpi-card"><h3>Reste Total</h3><div class="value ${totalRestes >= 0 ? 'positive' : 'negative'}">${formatCurrency(totalRestes)}</div></div>
             `;
-            
-            renderCountryChart();
         };
         
-        const renderCountryChart = () => {
-            const ctx = document.getElementById('country-chart').getContext('2d');
-            if (charts.country) charts.country.destroy();
-            
-            const countryCounts = operations.reduce((acc, op) => {
-                acc[op.pays] = (acc[op.pays] || 0) + 1;
-                return acc;
-            }, {});
-            
-            const sortedCountries = Object.entries(countryCounts)
-                .sort(([,a],[,b]) => b-a)
-                .slice(0, 10);
-                
-            const labels = sortedCountries.map(c => c[0]);
-            const data = sortedCountries.map(c => c[1]);
-
-            charts.country = new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        label: 'Nombre de colis',
-                        data: data,
-                        backgroundColor: 'rgba(59, 130, 246, 0.8)',
-                        borderColor: COLORS.accent,
-                        borderWidth: 1,
-                        borderRadius: 4
-                    }]
-                },
-                options: {
-                    indexAxis: 'y',
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    scales: {
-                        y: { ticks: { color: COLORS.text_muted } },
-                        x: { ticks: { color: COLORS.text_muted } }
-                    },
-                    plugins: { legend: { display: false } }
-                }
-            });
-        };
-
         // --- PAGE RAPPORTS ---
         const generateReport = () => {
             const period = document.getElementById('report-period').value;
@@ -1179,33 +1146,43 @@
             data.forEach(op => {
                 const marge = op.somme - op.dhl - op.depenses;
                 const reste = marge - op.depenses;
-                const row = `
-                    <tr>
-                        <td>${op.orderId}</td>
-                        <td>${op.date}</td>
-                        <td>${op.nature}</td>
-                        <td>${op.client}</td>
-                        <td>${op.pays}</td>
-                        <td>${formatCurrency(op.somme)}</td>
-                        <td>${formatCurrency(op.dhl)}</td>
-                        <td>${formatCurrency(op.depenses)}</td>
-                        <td>${formatCurrency(marge)}</td>
-                        <td>${formatCurrency(reste)}</td>
-                    </tr>
+                const row = document.createElement('tr');
+                row.dataset.id = op.id;
+                row.innerHTML = `
+                    <td>${op.orderId}</td>
+                    <td>${op.date}</td>
+                    <td>${op.nature}</td>
+                    <td>${op.client}</td>
+                    <td>${op.numeroExpediteur || '-'}</td>
+                    <td>${op.numeroDestinataire || '-'}</td>
+                    <td>${op.pays}</td>
+                    <td>${formatCurrency(op.somme)}</td>
+                    <td>${formatCurrency(marge)}</td>
+                    <td>${formatCurrency(reste)}</td>
                 `;
-                tbody.innerHTML += row;
+                tbody.appendChild(row);
             });
         };
 
         // --- FONCTIONS D'EXPORT ---
         const exportToCSV = (data, filename) => {
-            const headers = ["N° Ordre", "Date", "Nature du Colis", "Client", "Pays", "Bordereau", "Poids", "Unité Poids", "Somme Payée", "Montant DHL", "Dépenses", "Marge", "Reste"];
+            const headers = ["N° Ordre", "Date", "Nature du Colis", "Client", "N° Expéditeur", "N° Destinataire", "Pays", "Bordereau", "Poids", "Unité Poids", "Somme Payée", "Montant DHL", "Dépenses", "Marge", "Reste"];
+            let totalSomme = 0, totalDhl = 0, totalDepenses = 0, totalMarge = 0, totalReste = 0;
+
             const rows = data.map(op => {
                 const marge = op.somme - op.dhl - op.depenses;
                 const reste = marge - op.depenses;
-                return [op.orderId, op.date, op.nature, op.client, op.pays, op.bordereau, op.poids, op.poidsUnite, op.somme, op.dhl, op.depenses, marge, reste];
+                totalSomme += op.somme;
+                totalDhl += op.dhl;
+                totalDepenses += op.depenses;
+                totalMarge += marge;
+                totalReste += reste;
+                return [op.orderId, op.date, op.nature, op.client, op.numeroExpediteur, op.numeroDestinataire, op.pays, op.bordereau, op.poids, op.poidsUnite, op.somme, op.dhl, op.depenses, marge, reste];
             });
-            let csvContent = "data:text/csv;charset=utf-8," + [headers.join(";"), ...rows.map(e => e.join(";"))].join("\n");
+
+            const summaryRow = ["", "", "", "", "", "", "", "", "", "TOTAL:", totalSomme, totalDhl, totalDepenses, totalMarge, totalReste];
+            let csvContent = "data:text/csv;charset=utf-8," + [headers.join(";"), ...rows.map(e => e.join(";")), summaryRow.join(";")].join("\n");
+            
             const encodedUri = encodeURI(csvContent);
             const link = document.createElement("a");
             link.setAttribute("href", encodedUri);
@@ -1216,15 +1193,30 @@
         };
         
         const exportToExcel = (data, filename) => {
+            let totalSomme = 0, totalDhl = 0, totalDepenses = 0, totalMarge = 0, totalReste = 0;
+
             const worksheetData = data.map(op => {
                 const marge = op.somme - op.dhl - op.depenses;
                 const reste = marge - op.depenses;
+                totalSomme += op.somme;
+                totalDhl += op.dhl;
+                totalDepenses += op.depenses;
+                totalMarge += marge;
+                totalReste += reste;
                 return {
-                    "N° Ordre": op.orderId, "Date": op.date, "Nature du Colis": op.nature, "Client": op.client, "Pays": op.pays, "Bordereau": op.bordereau,
+                    "N° Ordre": op.orderId, "Date": op.date, "Nature du Colis": op.nature, "Client": op.client, "N° Expéditeur": op.numeroExpediteur, "N° Destinataire": op.numeroDestinataire, "Pays": op.pays, "Bordereau": op.bordereau,
                     "Poids": op.poids, "Unité Poids": op.poidsUnite, "Somme Payée": op.somme, "Montant DHL": op.dhl, "Dépenses": op.depenses, "Marge": marge, "Reste": reste
                 };
             });
+
+            const summaryRow = {
+                "N° Ordre": "", "Date": "", "Nature du Colis": "", "Client": "", "N° Expéditeur": "", "N° Destinataire": "", "Pays": "", "Bordereau": "",
+                "Poids": "", "Unité Poids": "TOTAL:", "Somme Payée": totalSomme, "Montant DHL": totalDhl, "Dépenses": totalDepenses, "Marge": totalMarge, "Reste": totalReste
+            };
+
             const worksheet = XLSX.utils.json_to_sheet(worksheetData);
+            XLSX.utils.sheet_add_json(worksheet, [summaryRow], { origin: -1, skipHeader: true });
+
             const workbook = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(workbook, worksheet, "Opérations");
             XLSX.writeFile(workbook, `${filename}.xlsx`);
@@ -1252,6 +1244,7 @@
 
         // --- PAGE PARAMÈTRES ---
         const handleAnnualBackup = async () => {
+            if (!auth.currentUser) { showToast("Vous n'êtes pas connecté.", "error"); return; }
             const confirmed = await requestSecurityCode('Sauvegarde Annuelle', 'Cette action va archiver et effacer les données. Confirmez votre code.');
             if (confirmed) {
                 const currentYear = new Date().getFullYear();
@@ -1283,7 +1276,6 @@
             unsubscribeOperations = db.collection('operations').orderBy('orderId', 'desc').onSnapshot(snapshot => {
                 operations = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                 
-                // Mettre à jour l'UI en fonction de la page active
                 const currentPage = document.querySelector('.page.active').id.replace('-page', '');
                 switch(currentPage) {
                     case 'dashboard': updateDashboard(); break;
@@ -1338,9 +1330,10 @@
                 document.getElementById('report-period').addEventListener('change', generateReport);
                 document.getElementById('export-pdf-report').addEventListener('click', () => exportToPDF('report-content', 'rapport_moncolis'));
                 document.getElementById('export-excel-report').addEventListener('click', () => {
-                    const table = document.getElementById('report-table');
-                    const wb = XLSX.utils.table_to_book(table, {sheet: "Rapport"});
-                    XLSX.writeFile(wb, "rapport_moncolis.xlsx");
+                    const reportTbody = document.getElementById('report-table').querySelector('tbody');
+                    const reportDataIds = [...reportTbody.querySelectorAll('tr')].map(tr => tr.dataset.id);
+                    const reportOps = operations.filter(op => reportDataIds.includes(op.id));
+                    exportToExcel(reportOps, 'rapport_moncolis');
                 });
 
                 document.getElementById('annual-backup-btn').addEventListener('click', handleAnnualBackup);

@@ -190,9 +190,10 @@
             margin-bottom: 8px;
         }
         .kpi-card .value {
-            font-size: 2.5em;
+            font-size: clamp(1.5em, 5vw, 2.25em);
             font-weight: 700;
             color: var(--text-dark);
+            overflow-wrap: break-word;
         }
         .kpi-card .value.positive { color: var(--success-color); }
         .kpi-card .value.negative { color: var(--highlight-color); }
@@ -1273,10 +1274,10 @@
         };
 
         // --- FONCTIONS D'EXPORT ---
-        const exportToExcel = (data, filename) => {
+        const exportToExcel = (opsData, expData, filename) => {
             let totalSomme = 0, totalMarge = 0, totalFrais = 0;
 
-            const worksheetData = data.map(op => {
+            const worksheetData = opsData.map(op => {
                 const marge = op.somme - op.montantFrais;
                 totalSomme += op.somme;
                 totalMarge += marge;
@@ -1287,13 +1288,20 @@
                 };
             });
 
-            const summaryRow = {
-                "N° Ordre": "", "Date": "", "Nature du Colis": "", "Client": "", "N° Expéditeur": "", "N° Destinataire": "", "Pays": "", "Bordereau": "",
-                "Poids": "", "Unité Poids": "TOTAL:", "Somme Payée": totalSomme, "Type Frais": "", "Montant Frais": totalFrais, "Marge": totalMarge
-            };
+            const totalDepenses = expData.reduce((sum, exp) => sum + exp.montant, 0);
+            const totalRestes = totalMarge - totalDepenses;
+
+            const summaryRows = [
+                {}, // Ligne vide
+                { "Unité Poids": "TOTAL REVENUS:", "Somme Payée": totalSomme },
+                { "Unité Poids": "TOTAL FRAIS:", "Somme Payée": totalFrais },
+                { "Unité Poids": "MARGE TOTALE:", "Somme Payée": totalMarge },
+                { "Unité Poids": "DÉPENSES TOTALES:", "Somme Payée": totalDepenses },
+                { "Unité Poids": "RESTE TOTAL:", "Somme Payée": totalRestes },
+            ];
 
             const worksheet = XLSX.utils.json_to_sheet(worksheetData);
-            XLSX.utils.sheet_add_json(worksheet, [summaryRow], { origin: -1, skipHeader: true });
+            XLSX.utils.sheet_add_json(worksheet, summaryRows, { origin: -1, skipHeader: true });
 
             const workbook = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(workbook, worksheet, "Opérations");
@@ -1326,14 +1334,19 @@
             if (confirmed) {
                 const currentYear = new Date().getFullYear();
                 const yearOps = operations.filter(op => parseDate(op.date).getFullYear() === currentYear);
+                const yearExpenses = expenses.filter(exp => parseDate(exp.date).getFullYear() === currentYear);
                 
                 if (yearOps.length > 0) {
-                    exportToExcel(yearOps, `sauvegarde_annuelle_moncolis_${currentYear}`);
+                    exportToExcel(yearOps, yearExpenses, `sauvegarde_annuelle_moncolis_${currentYear}`);
                 }
                 
                 const batch = db.batch();
                 yearOps.forEach(op => {
                     const docRef = db.collection('operations').doc(op.id);
+                    batch.delete(docRef);
+                });
+                yearExpenses.forEach(exp => {
+                    const docRef = db.collection('expenses').doc(exp.id);
                     batch.delete(docRef);
                 });
                 await batch.commit();
@@ -1417,15 +1430,16 @@
                     if (target.classList.contains('delete-btn')) deleteOperation(id);
                 });
                 
-                document.getElementById('export-csv-history').addEventListener('click', () => exportToExcel(operations, 'historique_complet_moncolis'));
-                document.getElementById('export-excel-history').addEventListener('click', () => exportToExcel(operations, 'historique_complet_moncolis'));
+                document.getElementById('export-csv-history').addEventListener('click', () => exportToExcel(operations, expenses, 'historique_complet_moncolis'));
+                document.getElementById('export-excel-history').addEventListener('click', () => exportToExcel(operations, expenses, 'historique_complet_moncolis'));
 
                 document.getElementById('report-period').addEventListener('change', generateReport);
                 document.getElementById('export-excel-report').addEventListener('click', () => {
                     const reportTbody = document.getElementById('report-table').querySelector('tbody');
                     const reportDataIds = [...reportTbody.querySelectorAll('tr')].map(tr => tr.dataset.id);
                     const reportOps = operations.filter(op => reportDataIds.includes(op.id));
-                    exportToExcel(reportOps, 'rapport_moncolis');
+                    const reportExps = expenses.filter(exp => reportOps.some(op => op.date === exp.date));
+                    exportToExcel(reportOps, reportExps, 'rapport_moncolis');
                 });
 
                 document.getElementById('export-excel-expenses').addEventListener('click', () => exportExpensesToExcel(expenses, 'rapport_depenses'));

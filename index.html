@@ -190,10 +190,11 @@
             margin-bottom: 8px;
         }
         .kpi-card .value {
-            font-size: clamp(1.5em, 5vw, 2.25em);
+            font-size: clamp(1.5em, 4vw, 2.25em);
             font-weight: 700;
             color: var(--text-dark);
             overflow-wrap: break-word;
+            line-height: 1.2;
         }
         .kpi-card .value.positive { color: var(--success-color); }
         .kpi-card .value.negative { color: var(--highlight-color); }
@@ -628,8 +629,7 @@
                         <input type="text" id="history-search" placeholder="Rechercher par client, pays, bordereau...">
                     </div>
                     <div class="form-actions">
-                         <button id="export-csv-history" class="btn btn-secondary"><i class="fas fa-file-csv"></i> Exporter CSV</button>
-                         <button id="export-excel-history" class="btn btn-secondary"><i class="fas fa-file-excel"></i> Exporter Excel</button>
+                         <button id="export-excel-history" class="btn btn-primary"><i class="fas fa-file-excel"></i> Exporter Excel</button>
                     </div>
                     <div class="table-container">
                         <table id="history-table">
@@ -696,7 +696,7 @@
                     <div class="card">
                         <h3>Historique des Dépenses</h3>
                          <div class="form-actions" style="margin-top: 0; margin-bottom: 24px;">
-                            <button id="export-excel-expenses" class="btn btn-secondary"><i class="fas fa-file-excel"></i> Exporter Excel</button>
+                            <button id="export-excel-expenses" class="btn btn-primary"><i class="fas fa-file-excel"></i> Exporter Excel</button>
                         </div>
                         <div class="table-container" id="expense-table-container">
                             <table id="expense-history-table">
@@ -1293,11 +1293,12 @@
 
             const summaryRows = [
                 {}, // Ligne vide
-                { "Unité Poids": "TOTAL REVENUS:", "Somme Payée": totalSomme },
-                { "Unité Poids": "TOTAL FRAIS:", "Somme Payée": totalFrais },
-                { "Unité Poids": "MARGE TOTALE:", "Somme Payée": totalMarge },
-                { "Unité Poids": "DÉPENSES TOTALES:", "Somme Payée": totalDepenses },
-                { "Unité Poids": "RESTE TOTAL:", "Somme Payée": totalRestes },
+                { "Unité Poids": "RÉSUMÉ FINANCIER" },
+                { "Unité Poids": "Total Revenus:", "Somme Payée": totalSomme },
+                { "Unité Poids": "Total Frais d'Envoi:", "Somme Payée": totalFrais },
+                { "Unité Poids": "Marge Totale:", "Somme Payée": totalMarge },
+                { "Unité Poids": "Dépenses Totales:", "Somme Payée": totalDepenses },
+                { "Unité Poids": "Reste Total:", "Somme Payée": totalRestes },
             ];
 
             const worksheet = XLSX.utils.json_to_sheet(worksheetData);
@@ -1430,7 +1431,6 @@
                     if (target.classList.contains('delete-btn')) deleteOperation(id);
                 });
                 
-                document.getElementById('export-csv-history').addEventListener('click', () => exportToExcel(operations, expenses, 'historique_complet_moncolis'));
                 document.getElementById('export-excel-history').addEventListener('click', () => exportToExcel(operations, expenses, 'historique_complet_moncolis'));
 
                 document.getElementById('report-period').addEventListener('change', generateReport);

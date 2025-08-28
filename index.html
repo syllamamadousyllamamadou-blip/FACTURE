@@ -7,9 +7,6 @@
     
     <!-- CDNs pour les librairies externes -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
 
@@ -204,6 +201,12 @@
         .form-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 24px;
+        }
+        
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
             gap: 24px;
         }
 
@@ -513,6 +516,9 @@
                     <a href="#" data-page="history"><i class="fas fa-history"></i><span>Historique</span></a>
                 </li>
                 <li class="nav-item">
+                    <a href="#" data-page="expenses"><i class="fas fa-receipt"></i><span>Dépenses</span></a>
+                </li>
+                <li class="nav-item">
                     <a href="#" data-page="reports"><i class="fas fa-file-alt"></i><span>Rapports</span></a>
                 </li>
                 <li class="nav-item">
@@ -589,20 +595,20 @@
                                 <input type="number" id="somme-payee" step="0.01" required>
                             </div>
                             <div class="form-group">
-                                <label for="montant-dhl">Montant DHL (FCFA)</label>
-                                <input type="number" id="montant-dhl" step="0.01" required>
+                                <label for="type-frais">Type de Frais d'Envoi</label>
+                                <select id="type-frais">
+                                    <option value="DHL">DHL</option>
+                                    <option value="FEDEX">FEDEX</option>
+                                    <option value="Autres">Autres</option>
+                                </select>
                             </div>
                             <div class="form-group">
-                                <label for="depenses">Dépenses (FCFA)</label>
-                                <input type="number" id="depenses" step="0.01" required>
+                                <label for="montant-frais">Montant Frais d'Envoi (FCFA)</label>
+                                <input type="number" id="montant-frais" step="0.01" required>
                             </div>
                             <div class="form-group">
                                 <label for="marge">Marge (FCFA)</label>
                                 <input type="text" id="marge" class="readonly" readonly>
-                            </div>
-                            <div class="form-group">
-                                <label for="reste-argent">Reste d’argent (FCFA)</label>
-                                <input type="text" id="reste-argent" class="readonly" readonly>
                             </div>
                         </div>
                         <div class="form-actions">
@@ -649,6 +655,68 @@
                 </div>
             </section>
 
+            <!-- Page Dépenses -->
+            <section id="expenses-page" class="page">
+                <h2>Suivi des Dépenses</h2>
+                <div class="form-row">
+                    <div class="card">
+                        <h3>Ajouter une Dépense</h3>
+                        <form id="expense-form">
+                             <div class="form-group">
+                                <label for="nature-depense">Nature de la dépense</label>
+                                <select id="nature-depense" required>
+                                    <option value="">Choisir une nature...</option>
+                                    <option value="FACTURE CIE">FACTURE CIE</option>
+                                    <option value="FACTURE SODECI">FACTURE SODECI</option>
+                                    <option value="NOURRITURE">NOURRITURE</option>
+                                    <option value="LOYER">LOYER</option>
+                                    <option value="TRANSPORT">TRANSPORT</option>
+                                    <option value="COMMISSION">COMMISSION</option>
+                                    <option value="AUTRES">AUTRES</option>
+                                </select>
+                            </div>
+                            <div class="form-group" id="autre-nature-container" style="display: none;">
+                                <label for="autre-nature-depense">Préciser la nature</label>
+                                <input type="text" id="autre-nature-depense">
+                            </div>
+                             <div class="form-group">
+                                <label for="montant-depense">Montant (FCFA)</label>
+                                <input type="number" id="montant-depense" step="0.01" required>
+                            </div>
+                             <div class="form-group">
+                                <label for="effectue-par">Effectué par (Optionnel)</label>
+                                <input type="text" id="effectue-par">
+                            </div>
+                            <div class="form-actions">
+                                <button type="submit" class="btn btn-primary"><i class="fas fa-plus"></i> Ajouter Dépense</button>
+                            </div>
+                        </form>
+                    </div>
+                    <div class="card">
+                        <h3>Historique des Dépenses</h3>
+                         <div class="form-actions" style="margin-top: 0; margin-bottom: 24px;">
+                            <button id="export-excel-expenses" class="btn btn-secondary"><i class="fas fa-file-excel"></i> Exporter Excel</button>
+                        </div>
+                        <div class="table-container" id="expense-table-container">
+                            <table id="expense-history-table">
+                                <thead>
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>Nature</th>
+                                        <th>Montant</th>
+                                        <th>Par</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <!-- Dépenses chargées par JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
             <!-- Page Rapports -->
             <section id="reports-page" class="page">
                 <h2>Générer un Rapport</h2>
@@ -661,8 +729,7 @@
                             <option value="year">Cette année</option>
                             <option value="all">Global</option>
                         </select>
-                        <button id="export-pdf-report" class="btn btn-primary"><i class="fas fa-file-pdf"></i> Exporter PDF</button>
-                        <button id="export-excel-report" class="btn btn-secondary"><i class="fas fa-file-excel"></i> Exporter Excel</button>
+                        <button id="export-excel-report" class="btn btn-primary"><i class="fas fa-file-excel"></i> Exporter Excel</button>
                     </div>
                     <div id="report-content">
                         <h3 id="report-title">Rapport</h3>
@@ -679,7 +746,6 @@
                                         <th>Pays</th>
                                         <th>Somme Payée</th>
                                         <th>Marge</th>
-                                        <th>Reste</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -703,7 +769,7 @@
                 </div>
                 <div class="card danger-zone">
                     <h3>Zone de Sauvegarde Annuelle</h3>
-                    <p>Cette action exportera toutes les opérations de l'année en cours dans un fichier JSON, puis réinitialisera l'application pour la nouvelle année (compteur et opérations). Cette action est irréversible.</p>
+                    <p>Cette action exportera toutes les opérations de l'année en cours dans un fichier Excel, puis réinitialisera l'application pour la nouvelle année (compteur et opérations). Cette action est irréversible.</p>
                     <button class="btn btn-primary" id="annual-backup-btn"><i class="fas fa-archive"></i> Lancer la Sauvegarde Annuelle</button>
                 </div>
             </section>
@@ -740,18 +806,9 @@
         const TIMEZONE = 'Africa/Abidjan';
 
         let operations = [];
+        let expenses = [];
         let currentOrderId = 1;
-        let charts = {};
-        let unsubscribeOperations; // Pour se désabonner du listener Firestore
-
-        // --- RÉCUPÉRATION DES COULEURS CSS POUR JS ---
-        const computedStyles = getComputedStyle(document.documentElement);
-        const COLORS = {
-            highlight: computedStyles.getPropertyValue('--highlight-color').trim(),
-            accent: computedStyles.getPropertyValue('--accent-color').trim(),
-            text_muted: computedStyles.getPropertyValue('--text-muted').trim(),
-            text_dark: computedStyles.getPropertyValue('--text-dark').trim(),
-        };
+        let unsubscribeOperations, unsubscribeExpenses;
 
         // --- LISTE DES PAYS ---
         const countryList = ["Afghanistan","Afrique du Sud","Albanie","Algérie","Allemagne","Andorre","Angola","Antigua-et-Barbuda","Arabie saoudite","Argentine","Arménie","Australie","Autriche","Azerbaïdjan","Bahamas","Bahreïn","Bangladesh","Barbade","Belgique","Belize","Bénin","Bhoutan","Biélorussie","Birmanie","Bolivie","Bosnie-Herzégovine","Botswana","Brésil","Brunei","Bulgarie","Burkina Faso","Burundi","Cambodge","Cameroun","Canada","Cap-Vert","Chili","Chine","Chypre","Colombie","Comores","Corée du Nord","Corée du Sud","Costa Rica","Côte d'Ivoire","Croatie","Cuba","Danemark","Djibouti","Dominique","Égypte","Émirats arabes unis","Équateur","Érythrée","Espagne","Estonie","Eswatini","États-Unis","Éthiopie","Fidji","Finlande","France","Gabon","Gambie","Géorgie","Ghana","Grèce","Grenade","Guatemala","Guinée","Guinée équatoriale","Guinée-Bissau","Guyana","Haïti","Honduras","Hongrie","Îles Cook","Îles Marshall","Inde","Indonésie","Irak","Iran","Irlande","Islande","Israël","Italie","Jamaïque","Japon","Jordanie","Kazakhstan","Kenya","Kirghizistan","Kiribati","Koweït","Laos","Lesotho","Lettonie","Liban","Liberia","Libye","Liechtenstein","Lituanie","Luxembourg","Macédoine du Nord","Madagascar","Malaisie","Malawi","Maldives","Mali","Malte","Maroc","Maurice","Mauritanie","Mexique","Micronésie","Moldavie","Monaco","Mongolie","Monténégro","Mozambique","Namibie","Nauru","Népal","Nicaragua","Niger","Nigeria","Niue","Norvège","Nouvelle-Zélande","Oman","Ouganda","Ouzbékistan","Pakistan","Palaos","Palestine","Panama","Papouasie-Nouvelle-Guinée","Paraguay","Pays-Bas","Pérou","Philippines","Pologne","Portugal","Qatar","République centrafricaine","République démocratique du Congo","République dominicaine","République du Congo","Tchéquie","Roumanie","Royaume-Uni","Russie","Rwanda","Saint-Christophe-et-Niévès","Saint-Vincent-et-les-Grenadines","Sainte-Lucie","Saint-Marin","Salomon","Salvador","Samoa","Sao Tomé-et-Principe","Sénégal","Serbie","Seychelles","Sierra Leone","Singapour","Slovaquie","Slovénie","Somalie","Soudan","Soudan du Sud","Sri Lanka","Suède","Suisse","Suriname","Syrie","Tadjikistan","Tanzanie","Tchad","Thaïlande","Timor oriental","Togo","Tonga","Trinité-et-Tobago","Tunisie","Turkménistan","Turquie","Tuvalu","Ukraine","Uruguay","Vanuatu","Vatican","Venezuela","Viêt Nam","Yémen","Zambie","Zimbabwe"];
@@ -778,6 +835,8 @@
         const formTitle = document.getElementById('form-title');
         const formSubmitBtn = document.getElementById('form-submit-btn');
         const formCancelBtn = document.getElementById('form-cancel-btn');
+
+        const expenseForm = document.getElementById('expense-form');
 
         // --- FONCTIONS UTILITAIRES ---
         const formatCurrency = (amount) => {
@@ -847,6 +906,7 @@
             await auth.signOut();
             sessionStorage.removeItem(SESSION_KEY);
             if(unsubscribeOperations) unsubscribeOperations();
+            if(unsubscribeExpenses) unsubscribeExpenses();
             checkSession();
         };
 
@@ -887,6 +947,7 @@
         const resetCounter = async () => {
             await db.collection('metadata').doc('counter').set({ value: 1 });
             currentOrderId = 1;
+            document.getElementById('numero-ordre').value = 1;
         };
 
         // --- GESTION DE L'INTERFACE (UI) ---
@@ -897,7 +958,6 @@
             navLinks.forEach(link => link.classList.remove('active'));
             document.querySelector(`a[data-page="${pageId}"]`).classList.add('active');
             
-            // Rafraîchir les données de la page active
             const currentPage = document.querySelector('.page.active').id.replace('-page', '');
             if (currentPage === pageId) {
                 switch(pageId) {
@@ -905,6 +965,7 @@
                     case 'history': renderHistoryTable(); break;
                     case 'reports': generateReport(); break;
                     case 'add-operation': resetOperationForm(); break;
+                    case 'expenses': renderExpenseHistoryTable(); break;
                 }
             }
         };
@@ -923,14 +984,9 @@
         // --- LOGIQUE DU FORMULAIRE D'OPÉRATION ---
         const calculateFormValues = () => {
             const somme = parseFloat(document.getElementById('somme-payee').value) || 0;
-            const dhl = parseFloat(document.getElementById('montant-dhl').value) || 0;
-            const depenses = parseFloat(document.getElementById('depenses').value) || 0;
-            
-            const marge = somme - dhl - depenses;
-            const reste = marge - depenses;
-
+            const frais = parseFloat(document.getElementById('montant-frais').value) || 0;
+            const marge = somme - frais;
             document.getElementById('marge').value = formatCurrency(marge);
-            document.getElementById('reste-argent').value = formatCurrency(reste);
         };
 
         const resetOperationForm = () => {
@@ -961,8 +1017,8 @@
                 poids: parseFloat(document.getElementById('poids').value),
                 poidsUnite: document.getElementById('poids-unite').value,
                 somme: parseFloat(document.getElementById('somme-payee').value),
-                dhl: parseFloat(document.getElementById('montant-dhl').value),
-                depenses: parseFloat(document.getElementById('depenses').value),
+                typeFrais: document.getElementById('type-frais').value,
+                montantFrais: parseFloat(document.getElementById('montant-frais').value),
             };
 
             try {
@@ -1015,8 +1071,8 @@
             document.getElementById('poids').value = op.poids;
             document.getElementById('poids-unite').value = op.poidsUnite;
             document.getElementById('somme-payee').value = op.somme;
-            document.getElementById('montant-dhl').value = op.dhl;
-            document.getElementById('depenses').value = op.depenses;
+            document.getElementById('type-frais').value = op.typeFrais;
+            document.getElementById('montant-frais').value = op.montantFrais;
             
             calculateFormValues();
             
@@ -1039,6 +1095,74 @@
             }
         };
 
+        // --- PAGE DÉPENSES ---
+        const handleExpenseFormSubmit = async (e) => {
+            e.preventDefault();
+            if (!auth.currentUser) { showToast("Vous n'êtes pas connecté.", "error"); return; }
+
+            let natureDepense = document.getElementById('nature-depense').value;
+            if (natureDepense === 'AUTRES') {
+                natureDepense = document.getElementById('autre-nature-depense').value;
+            }
+
+            const expenseData = {
+                date: getCurrentDate(),
+                nature: natureDepense,
+                montant: parseFloat(document.getElementById('montant-depense').value),
+                effectuePar: document.getElementById('effectue-par').value
+            };
+
+            try {
+                await db.collection('expenses').add(expenseData);
+                showToast('Dépense ajoutée avec succès!', 'success');
+                expenseForm.reset();
+                document.getElementById('autre-nature-container').style.display = 'none';
+                document.getElementById('autre-nature-depense').required = false;
+            } catch (error) {
+                console.error("Erreur d'ajout de dépense:", error);
+                showToast("Erreur lors de l'ajout de la dépense.", "error");
+            }
+        };
+
+        const renderExpenseHistoryTable = () => {
+            const tbody = document.getElementById('expense-history-table').querySelector('tbody');
+            tbody.innerHTML = '';
+
+            if (expenses.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">Aucune dépense trouvée.</td></tr>';
+                return;
+            }
+
+            expenses.forEach(expense => {
+                const row = `
+                    <tr>
+                        <td>${expense.date}</td>
+                        <td>${expense.nature}</td>
+                        <td>${formatCurrency(expense.montant)}</td>
+                        <td>${expense.effectuePar || '-'}</td>
+                        <td class="actions-cell">
+                            <button class="delete-btn" data-id="${expense.id}"><i class="fas fa-trash"></i></button>
+                        </td>
+                    </tr>
+                `;
+                tbody.innerHTML += row;
+            });
+        };
+
+        const deleteExpense = async (id) => {
+            if (!auth.currentUser) { showToast("Vous n'êtes pas connecté.", "error"); return; }
+            const confirmed = await requestSecurityCode('Supprimer la Dépense', 'Cette action est irréversible. Veuillez confirmer votre code.');
+            if (confirmed) {
+                try {
+                    await db.collection('expenses').doc(id).delete();
+                    showToast("Dépense supprimée.", "error");
+                } catch (error) {
+                    console.error("Erreur de suppression de dépense:", error);
+                    showToast("Erreur lors de la suppression.", "error");
+                }
+            }
+        };
+
         // --- PAGE HISTORIQUE ---
         const renderHistoryTable = (filter = '') => {
             const tbody = document.getElementById('history-table').querySelector('tbody');
@@ -1055,7 +1179,7 @@
             }
 
             filteredOps.forEach(op => {
-                const marge = op.somme - op.dhl - op.depenses;
+                const marge = op.somme - op.montantFrais;
                 const row = `
                     <tr>
                         <td>${op.orderId}</td>
@@ -1080,16 +1204,15 @@
 
         // --- PAGE DASHBOARD ---
         const updateDashboard = () => {
-            let totalRevenus = 0, totalDepenses = 0, totalMarges = 0, totalRestes = 0;
-            
+            let totalRevenus = 0, totalMarges = 0;
             operations.forEach(op => {
-                const marge = op.somme - op.dhl - op.depenses;
-                const reste = marge - op.depenses;
+                const marge = op.somme - op.montantFrais;
                 totalRevenus += op.somme;
-                totalDepenses += op.dhl + op.depenses;
                 totalMarges += marge;
-                totalRestes += reste;
             });
+
+            const totalDepenses = expenses.reduce((sum, exp) => sum + exp.montant, 0);
+            const totalRestes = totalMarges - totalDepenses;
 
             document.getElementById('kpi-container').innerHTML = `
                 <div class="card kpi-card"><h3>Revenus Totaux</h3><div class="value">${formatCurrency(totalRevenus)}</div></div>
@@ -1107,24 +1230,11 @@
             endDate.setHours(23, 59, 59, 999);
 
             switch (period) {
-                case 'today':
-                    startDate = new Date(now);
-                    startDate.setHours(0, 0, 0, 0);
-                    break;
-                case 'week':
-                    startDate = new Date(now);
-                    startDate.setDate(now.getDate() - now.getDay());
-                    startDate.setHours(0, 0, 0, 0);
-                    break;
-                case 'month':
-                    startDate = new Date(now.getFullYear(), now.getMonth(), 1);
-                    break;
-                case 'year':
-                    startDate = new Date(now.getFullYear(), 0, 1);
-                    break;
-                case 'all':
-                    startDate = new Date(0);
-                    break;
+                case 'today': startDate = new Date(now); startDate.setHours(0, 0, 0, 0); break;
+                case 'week': startDate = new Date(now); startDate.setDate(now.getDate() - now.getDay()); startDate.setHours(0, 0, 0, 0); break;
+                case 'month': startDate = new Date(now.getFullYear(), now.getMonth(), 1); break;
+                case 'year': startDate = new Date(now.getFullYear(), 0, 1); break;
+                case 'all': startDate = new Date(0); break;
             }
             
             const filteredOps = operations.filter(op => {
@@ -1140,12 +1250,11 @@
             const tbody = document.getElementById('report-table').querySelector('tbody');
             tbody.innerHTML = '';
             if (data.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;">Aucune donnée pour cette période.</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;">Aucune donnée pour cette période.</td></tr>';
                 return;
             }
             data.forEach(op => {
-                const marge = op.somme - op.dhl - op.depenses;
-                const reste = marge - op.depenses;
+                const marge = op.somme - op.montantFrais;
                 const row = document.createElement('tr');
                 row.dataset.id = op.id;
                 row.innerHTML = `
@@ -1158,60 +1267,29 @@
                     <td>${op.pays}</td>
                     <td>${formatCurrency(op.somme)}</td>
                     <td>${formatCurrency(marge)}</td>
-                    <td>${formatCurrency(reste)}</td>
                 `;
                 tbody.appendChild(row);
             });
         };
 
         // --- FONCTIONS D'EXPORT ---
-        const exportToCSV = (data, filename) => {
-            const headers = ["N° Ordre", "Date", "Nature du Colis", "Client", "N° Expéditeur", "N° Destinataire", "Pays", "Bordereau", "Poids", "Unité Poids", "Somme Payée", "Montant DHL", "Dépenses", "Marge", "Reste"];
-            let totalSomme = 0, totalDhl = 0, totalDepenses = 0, totalMarge = 0, totalReste = 0;
-
-            const rows = data.map(op => {
-                const marge = op.somme - op.dhl - op.depenses;
-                const reste = marge - op.depenses;
-                totalSomme += op.somme;
-                totalDhl += op.dhl;
-                totalDepenses += op.depenses;
-                totalMarge += marge;
-                totalReste += reste;
-                return [op.orderId, op.date, op.nature, op.client, op.numeroExpediteur, op.numeroDestinataire, op.pays, op.bordereau, op.poids, op.poidsUnite, op.somme, op.dhl, op.depenses, marge, reste];
-            });
-
-            const summaryRow = ["", "", "", "", "", "", "", "", "", "TOTAL:", totalSomme, totalDhl, totalDepenses, totalMarge, totalReste];
-            let csvContent = "data:text/csv;charset=utf-8," + [headers.join(";"), ...rows.map(e => e.join(";")), summaryRow.join(";")].join("\n");
-            
-            const encodedUri = encodeURI(csvContent);
-            const link = document.createElement("a");
-            link.setAttribute("href", encodedUri);
-            link.setAttribute("download", `${filename}.csv`);
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-        };
-        
         const exportToExcel = (data, filename) => {
-            let totalSomme = 0, totalDhl = 0, totalDepenses = 0, totalMarge = 0, totalReste = 0;
+            let totalSomme = 0, totalMarge = 0, totalFrais = 0;
 
             const worksheetData = data.map(op => {
-                const marge = op.somme - op.dhl - op.depenses;
-                const reste = marge - op.depenses;
+                const marge = op.somme - op.montantFrais;
                 totalSomme += op.somme;
-                totalDhl += op.dhl;
-                totalDepenses += op.depenses;
                 totalMarge += marge;
-                totalReste += reste;
+                totalFrais += op.montantFrais;
                 return {
                     "N° Ordre": op.orderId, "Date": op.date, "Nature du Colis": op.nature, "Client": op.client, "N° Expéditeur": op.numeroExpediteur, "N° Destinataire": op.numeroDestinataire, "Pays": op.pays, "Bordereau": op.bordereau,
-                    "Poids": op.poids, "Unité Poids": op.poidsUnite, "Somme Payée": op.somme, "Montant DHL": op.dhl, "Dépenses": op.depenses, "Marge": marge, "Reste": reste
+                    "Poids": op.poids, "Unité Poids": op.poidsUnite, "Somme Payée": op.somme, "Type Frais": op.typeFrais, "Montant Frais": op.montantFrais, "Marge": marge
                 };
             });
 
             const summaryRow = {
                 "N° Ordre": "", "Date": "", "Nature du Colis": "", "Client": "", "N° Expéditeur": "", "N° Destinataire": "", "Pays": "", "Bordereau": "",
-                "Poids": "", "Unité Poids": "TOTAL:", "Somme Payée": totalSomme, "Montant DHL": totalDhl, "Dépenses": totalDepenses, "Marge": totalMarge, "Reste": totalReste
+                "Poids": "", "Unité Poids": "TOTAL:", "Somme Payée": totalSomme, "Type Frais": "", "Montant Frais": totalFrais, "Marge": totalMarge
             };
 
             const worksheet = XLSX.utils.json_to_sheet(worksheetData);
@@ -1222,26 +1300,25 @@
             XLSX.writeFile(workbook, `${filename}.xlsx`);
         };
         
-        const exportToPDF = (elementId, filename) => {
-            const element = document.getElementById(elementId);
-            html2canvas(element).then(canvas => {
-                const imgData = canvas.toDataURL('image/png');
-                const { jsPDF } = window.jspdf;
-                const pdf = new jsPDF('p', 'mm', 'a4');
-                const imgProps= pdf.getImageProperties(imgData);
-                const pdfWidth = pdf.internal.pageSize.getWidth();
-                const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
-                pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
-                pdf.save(`${filename}.pdf`);
+        const exportExpensesToExcel = (data, filename) => {
+            let totalDepenses = 0;
+            const worksheetData = data.map(exp => {
+                totalDepenses += exp.montant;
+                return {
+                    "Date": exp.date,
+                    "Nature": exp.nature,
+                    "Montant": exp.montant,
+                    "Effectué Par": exp.effectuePar
+                };
             });
+            const summaryRow = { "Date": "", "Nature": "TOTAL:", "Montant": totalDepenses, "Effectué Par": "" };
+            const worksheet = XLSX.utils.json_to_sheet(worksheetData);
+            XLSX.utils.sheet_add_json(worksheet, [summaryRow], { origin: -1, skipHeader: true });
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, "Dépenses");
+            XLSX.writeFile(workbook, `${filename}.xlsx`);
         };
         
-        const exportToJSON = (data, filename) => {
-            const jsonString = JSON.stringify(data, null, 2);
-            const blob = new Blob([jsonString], {type: "application/json"});
-            saveAs(blob, `${filename}.json`);
-        };
-
         // --- PAGE PARAMÈTRES ---
         const handleAnnualBackup = async () => {
             if (!auth.currentUser) { showToast("Vous n'êtes pas connecté.", "error"); return; }
@@ -1251,10 +1328,9 @@
                 const yearOps = operations.filter(op => parseDate(op.date).getFullYear() === currentYear);
                 
                 if (yearOps.length > 0) {
-                    exportToJSON(yearOps, `sauvegarde_moncolis_${currentYear}`);
+                    exportToExcel(yearOps, `sauvegarde_annuelle_moncolis_${currentYear}`);
                 }
                 
-                // Batch delete from Firestore
                 const batch = db.batch();
                 yearOps.forEach(op => {
                     const docRef = db.collection('operations').doc(op.id);
@@ -1264,7 +1340,7 @@
                 
                 await resetCounter();
                 
-                showToast('Sauvegarde effectuée et application réinitialisée !');
+                showToast('Sauvegarde Excel effectuée et compteur réinitialisé à 1 !');
             }
         };
 
@@ -1272,22 +1348,16 @@
         const initializeApp = () => {
             populateCountryDropdown();
             
-            // Écouteur en temps réel pour les opérations
             unsubscribeOperations = db.collection('operations').orderBy('orderId', 'desc').onSnapshot(snapshot => {
                 operations = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                
-                const currentPage = document.querySelector('.page.active').id.replace('-page', '');
-                switch(currentPage) {
-                    case 'dashboard': updateDashboard(); break;
-                    case 'history': renderHistoryTable(); break;
-                    case 'reports': generateReport(); break;
-                }
-            }, error => {
-                console.error("Erreur d'écoute Firestore:", error);
-                showToast("Erreur de connexion à la base de données.", "error");
-            });
+                updateAllPages();
+            }, error => console.error("Erreur d'écoute Firestore (operations):", error));
 
-            // Écouteur pour le compteur
+            unsubscribeExpenses = db.collection('expenses').orderBy('date', 'desc').onSnapshot(snapshot => {
+                expenses = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                updateAllPages();
+            }, error => console.error("Erreur d'écoute Firestore (expenses):", error));
+
             db.collection('metadata').doc('counter').onSnapshot(doc => {
                 currentOrderId = doc.exists ? doc.data().value : 1;
                 if (document.querySelector('.page.active').id === 'add-operation-page') {
@@ -1295,46 +1365,70 @@
                 }
             });
 
+            const updateAllPages = () => {
+                const currentPage = document.querySelector('.page.active').id.replace('-page', '');
+                switch(currentPage) {
+                    case 'dashboard': updateDashboard(); break;
+                    case 'history': renderHistoryTable(); break;
+                    case 'reports': generateReport(); break;
+                    case 'expenses': renderExpenseHistoryTable(); break;
+                }
+            };
+
             switchPage('dashboard');
 
-            // --- ÉCOUTEURS D'ÉVÉNEMENTS (définis une seule fois) ---
             if (!window.eventListenersInitialized) {
                 navLinks.forEach(link => {
-                    link.addEventListener('click', (e) => {
-                        e.preventDefault();
-                        switchPage(e.currentTarget.dataset.page);
-                    });
+                    link.addEventListener('click', (e) => { e.preventDefault(); switchPage(e.currentTarget.dataset.page); });
                 });
 
                 logoutButton.addEventListener('click', handleLogout);
                 
-                ['somme-payee', 'montant-dhl', 'depenses'].forEach(id => {
+                ['somme-payee', 'montant-frais'].forEach(id => {
                     document.getElementById(id).addEventListener('input', calculateFormValues);
                 });
                 operationForm.addEventListener('submit', handleFormSubmit);
                 formCancelBtn.addEventListener('click', resetOperationForm);
                 
+                expenseForm.addEventListener('submit', handleExpenseFormSubmit);
+                document.getElementById('expense-history-table').addEventListener('click', (e) => {
+                    const target = e.target.closest('button.delete-btn');
+                    if (target) deleteExpense(target.dataset.id);
+                });
+
+                document.getElementById('nature-depense').addEventListener('change', (e) => {
+                    const autreNatureContainer = document.getElementById('autre-nature-container');
+                    const autreNatureInput = document.getElementById('autre-nature-depense');
+                    if (e.target.value === 'AUTRES') {
+                        autreNatureContainer.style.display = 'block';
+                        autreNatureInput.required = true;
+                    } else {
+                        autreNatureContainer.style.display = 'none';
+                        autreNatureInput.required = false;
+                    }
+                });
+
                 document.getElementById('history-search').addEventListener('input', (e) => renderHistoryTable(e.target.value));
                 document.getElementById('history-table').addEventListener('click', (e) => {
                     const target = e.target.closest('button');
                     if (!target) return;
-                    
                     const id = target.dataset.id;
                     if (target.classList.contains('edit-btn')) editOperation(id);
                     if (target.classList.contains('delete-btn')) deleteOperation(id);
                 });
                 
-                document.getElementById('export-csv-history').addEventListener('click', () => exportToCSV(operations, 'historique_complet_moncolis'));
+                document.getElementById('export-csv-history').addEventListener('click', () => exportToExcel(operations, 'historique_complet_moncolis'));
                 document.getElementById('export-excel-history').addEventListener('click', () => exportToExcel(operations, 'historique_complet_moncolis'));
 
                 document.getElementById('report-period').addEventListener('change', generateReport);
-                document.getElementById('export-pdf-report').addEventListener('click', () => exportToPDF('report-content', 'rapport_moncolis'));
                 document.getElementById('export-excel-report').addEventListener('click', () => {
                     const reportTbody = document.getElementById('report-table').querySelector('tbody');
                     const reportDataIds = [...reportTbody.querySelectorAll('tr')].map(tr => tr.dataset.id);
                     const reportOps = operations.filter(op => reportDataIds.includes(op.id));
                     exportToExcel(reportOps, 'rapport_moncolis');
                 });
+
+                document.getElementById('export-excel-expenses').addEventListener('click', () => exportExpensesToExcel(expenses, 'rapport_depenses'));
 
                 document.getElementById('annual-backup-btn').addEventListener('click', handleAnnualBackup);
                 
